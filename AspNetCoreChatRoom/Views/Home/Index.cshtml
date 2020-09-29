@@ -1,0 +1,81 @@
+﻿@model string
+@{
+    ViewData["Title"] = "Home Page";
+}
+<style>
+    body {margin:0px; padding:0px;}
+    .msg {
+        position: absolute;
+        top: 30px;
+        bottom: 30px;
+        border: 1px solid green;
+        margin-bottom: auto;
+        display:block;
+        overflow: scroll;
+        width:100%;
+        white-space:nowrap;
+    }
+</style>
+
+<div style="position:absolute; height:20px; left:0; display:block;width:100%;">
+    <span id="peopleCount"></span>
+</div>
+
+<div class="msg">
+    <div style="position:absolute; bottom:0;" id="msgs"></div>
+</div>
+
+<div style="position:absolute;height:20px;bottom:10px;left:0; display:block;width:100%">
+    <input type="text" style="max-width:unset;width:100%;max-width:100%" id="MessageField" placeholder="type message and press enter" />
+</div>
+
+@section Scripts {
+    <script>
+    $(function () {
+        var userName = '@Model';
+
+        var protocol = location.protocol === "https:" ? "wss:" : "ws:";
+        var wsUri = protocol + "//" + window.location.host;
+        var socket = new WebSocket(wsUri);
+        socket.onopen = e => {
+            console.log("socket opened", e);
+        };
+
+        socket.onclose = function (e) {
+            console.log("socket closed", e);
+        };
+
+        socket.onmessage = function (e) {
+            console.log(e);
+            const message = JSON.parse(e.data);
+            if (message.Type === 0)
+            {
+                $('#peopleCount').text(message.Text);
+            }
+            else if (message.Type === 1) {
+                $('#msgs').append(message.Text + '<br />');
+            }
+        };
+
+        socket.onerror = function (e) {
+            console.error(e.data);
+        };
+
+        $('#MessageField').keypress(function (e) {
+            if (e.which != 13) {
+                return;
+            }
+
+            e.preventDefault();
+
+            var message = {
+                Type: 1,
+                Text: userName + ": " + $('#MessageField').val()
+            }
+
+            socket.send(JSON.stringify(message));
+            $('#MessageField').val('');
+        });
+    });
+    </script>
+}
